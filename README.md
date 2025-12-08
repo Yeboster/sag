@@ -1,6 +1,6 @@
-# sag
+# sag 🗣️ — “Mac-style speech with ElevenLabs”
 
-🗣️ ElevenLabs speech, mac-style ease. Streams to your speakers by default, can list voices, and saves audio files when requested.
+One-liner TTS that works like `say`: stream to speakers by default, list voices, or save audio files.
 
 ## Install
 ```bash
