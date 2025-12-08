@@ -10,8 +10,7 @@ Requires Go 1.22+.
 
 Homebrew (macOS):
 ```bash
-brew tap steipete/tap
-brew install steipete/tap/sag
+brew install steipete/tap/sag  # auto-taps steipete/tap
 ```
 
 ## Configuration
