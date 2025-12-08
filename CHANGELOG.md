@@ -12,6 +12,7 @@
 - Config via `ELEVENLABS_API_KEY`/`SAG_API_KEY`; `--api-key` and `--base-url` overrides.
 - Tests for format inference, text sourcing, voice resolution helpers, and default `speak` routing behavior.
 - Help/README improvements: feature overview, examples for subcommand-less usage, and voice discovery guidance.
+- Homebrew tap formula (`brew install steipete/tap/sag`) and release playbook.
 - CI workflow (lint + tests) and golangci-lint config.
 - Documentation: README, docs/spec.md, and usage examples.
 - Version flag (`--version` / `-V`) reporting 0.1.0; help available without API key.
