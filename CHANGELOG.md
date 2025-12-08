@@ -2,7 +2,7 @@
 
 ## 0.1.0 - 2025-12-08
 ### Added
-- Initial release of `sag` (formerly say11) ElevenLabs TTS CLI with macOS `say`-style flags.
+- Initial release of `sag` ElevenLabs TTS CLI with macOS `say`-style flags.
 - Streaming default playback to speakers with optional file output; cross-platform audio via go-mp3 + oto.
 - Voice listing (`sag voices`) and voice resolution by name/ID, including `?` to list.
 - macOS `say` compatibility: `-v/--voice`, `-r/--rate`, `-f/--input-file`, `-o/--output`, plus accepted no-op flags.
