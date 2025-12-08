@@ -1,6 +1,6 @@
 # Binaries
-sag
-say11
+/sag
+/say11
 *.exe
 *.exe~
 *.dll
