@@ -17,6 +17,8 @@ dist/
 
 # Go vendor
 vendor/
+node_modules/
+pnpm-lock.yaml
 
 # Editor/OS cruft
 .DS_Store

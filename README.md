@@ -50,9 +50,17 @@ sag voices --search english --limit 20
 ```
 
 ## Development
-- Format: `go fmt ./...`
-- Lint: `golangci-lint run`
-- Tests: `go test ./...`
+- With pnpm:
+  - `pnpm format`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm build`
+  - `pnpm sag -- --help` (passes args to the Go binary)
+- Direct Go:
+  - Format: `go fmt ./...`
+  - Lint: `golangci-lint run`
+  - Tests: `go test ./...`
+  - Build: `go build ./cmd/sag`
 
 ## Limitations
 - ElevenLabs account and API key required.
