@@ -8,6 +8,11 @@ go install ./cmd/sag
 ```
 Requires Go 1.22+.
 
+Homebrew (macOS):
+```bash
+brew install steipete/tap/sag
+```
+
 ## Configuration
 - `ELEVENLABS_API_KEY` (required)
 - Optional defaults: `ELEVENLABS_VOICE_ID`, `SAG_VOICE_ID` (preferred), or legacy `SAY11_VOICE_ID`
