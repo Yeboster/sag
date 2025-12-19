@@ -24,6 +24,14 @@ CLI that mirrors macOS `say` but uses ElevenLabs for synthesis. Defaults to stre
   - `--latency-tier` (0-4, default 0)
   - `--play/--no-play` (default play)
   - `--speed` (0.5–2.0, default 1.0; >1.0 speaks faster)
+  - `--stability` (0..1; when set)
+  - `--similarity` / `--similarity-boost` (0..1; when set)
+  - `--style` (0..1; when set)
+  - `--speaker-boost` / `--no-speaker-boost`
+  - `--seed` (0..4294967295; when set)
+  - `--normalize` (`auto|on|off`; when set)
+  - `--lang` (2-letter ISO 639-1; when set)
+  - `--metrics` print basic stats to stderr
   - `--output <path>` save audio while optionally playing
 - Behavior:
   - Streaming path calls `POST /v1/text-to-speech/{voice_id}/stream` with JSON body.

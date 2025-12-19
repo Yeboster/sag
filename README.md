@@ -57,9 +57,17 @@ Key flags (subset):
 - `-f, --input-file` read text from file (`-` for stdin)
 - `-o, --output` write audio file; format inferred by extension (`.wav` -> PCM, `.mp3` -> MP3)
 - `--speed` explicit speed multiplier (0.5–2.0)
+- `--stability` 0..1 (higher = more consistent, less expressive)
+- `--similarity` / `--similarity-boost` 0..1 (higher = closer to the reference voice)
+- `--style` 0..1 (higher = more stylized delivery; model/voice dependent)
+- `--speaker-boost` / `--no-speaker-boost` toggle clarity boost (model dependent)
+- `--seed` 0..4294967295 best-effort repeatability across runs
+- `--normalize` `auto|on|off` numbers/units/URLs normalization (when set)
+- `--lang` `en|de|fr|...` 2-letter ISO 639-1 language code (when set)
 - `--stream/--no-stream` stream while generating (default on)
 - `--latency-tier` 0–4 lower latency tiers
 - `--play/--no-play` control speaker playback
+- `--metrics` print basic stats to stderr
 
 Voices:
 ```bash

@@ -19,9 +19,9 @@ var (
 	rootCmd     = &cobra.Command{
 		Use:     "sag",
 		Short:   "🗣️ ElevenLabs speech, mac-style ease",
-		Long:    "Command-line ElevenLabs TTS with macOS playback. Call it like macOS 'say': if you skip the subcommand, text args are passed to 'speak' (e.g. `sag \"Hello\"`).",
-		Example: "  sag \"Hi Peter\"\n  echo 'piped input' | sag\n  sag speak -v Roger --rate 200 \"Faster speech\"",
-		Version: "0.1.0",
+		Long:    "Command-line ElevenLabs TTS with macOS playback. Call it like macOS 'say': if you skip the subcommand, text args are passed to 'speak' (e.g. `sag \"Hello\"`).\n\nTip: run `sag prompting` for model-specific prompting tips and recommended knobs.",
+		Example: "  sag \"Hi Peter\"\n  echo 'piped input' | sag\n  sag speak -v Roger --rate 200 \"Faster speech\"\n  sag prompting",
+		Version: "0.2.0",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if versionFlag {
 				fmt.Println(cmd.Root().Name(), cmd.Root().Version)

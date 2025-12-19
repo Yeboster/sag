@@ -214,7 +214,7 @@ func TestStreamAndPlayWritesOutput(t *testing.T) {
 	opts := speakOptions{voiceID: "v1", outputPath: out, stream: true, play: false}
 	payload := elevenlabs.TTSRequest{Text: "hi"}
 
-	if err := streamAndPlay(context.Background(), client, opts, payload); err != nil {
+	if _, err := streamAndPlay(context.Background(), client, opts, payload); err != nil {
 		t.Fatalf("streamAndPlay error: %v", err)
 	}
 	data, err := os.ReadFile(out)
@@ -241,7 +241,7 @@ func TestConvertAndPlayWritesOutput(t *testing.T) {
 	opts := speakOptions{voiceID: "v1", outputPath: out, play: false}
 	payload := elevenlabs.TTSRequest{Text: "hi"}
 
-	if err := convertAndPlay(context.Background(), client, opts, payload); err != nil {
+	if _, err := convertAndPlay(context.Background(), client, opts, payload); err != nil {
 		t.Fatalf("convertAndPlay error: %v", err)
 	}
 	data, err := os.ReadFile(out)
@@ -258,7 +258,7 @@ func TestStreamAndPlayRequiresWork(t *testing.T) {
 	opts := speakOptions{voiceID: "v1", play: false, stream: true}
 	payload := elevenlabs.TTSRequest{Text: "hi"}
 
-	err := streamAndPlay(context.Background(), client, opts, payload)
+	_, err := streamAndPlay(context.Background(), client, opts, payload)
 	if err == nil {
 		t.Fatalf("expected error when no output and play disabled")
 	}
@@ -283,7 +283,7 @@ func TestStreamAndPlayWithPlayback(t *testing.T) {
 	opts := speakOptions{voiceID: "v1", play: true, stream: true}
 	payload := elevenlabs.TTSRequest{Text: "hi"}
 
-	if err := streamAndPlay(context.Background(), client, opts, payload); err != nil {
+	if _, err := streamAndPlay(context.Background(), client, opts, payload); err != nil {
 		t.Fatalf("streamAndPlay error: %v", err)
 	}
 	if !called {
@@ -310,7 +310,7 @@ func TestConvertAndPlayWithPlayback(t *testing.T) {
 	opts := speakOptions{voiceID: "v1", play: true, outputPath: "", stream: false}
 	payload := elevenlabs.TTSRequest{Text: "hi"}
 
-	if err := convertAndPlay(context.Background(), client, opts, payload); err != nil {
+	if _, err := convertAndPlay(context.Background(), client, opts, payload); err != nil {
 		t.Fatalf("convertAndPlay error: %v", err)
 	}
 	if !called {

@@ -88,19 +88,22 @@ func (c *Client) ListVoices(ctx context.Context, search string) ([]Voice, error)
 
 // TTSRequest configures a text-to-speech request payload.
 type TTSRequest struct {
-	Text          string         `json:"text"`
-	ModelID       string         `json:"model_id,omitempty"`
-	VoiceSettings *VoiceSettings `json:"voice_settings,omitempty"`
-	OutputFormat  string         `json:"output_format,omitempty"`
+	Text                   string         `json:"text"`
+	ModelID                string         `json:"model_id,omitempty"`
+	VoiceSettings          *VoiceSettings `json:"voice_settings,omitempty"`
+	OutputFormat           string         `json:"output_format,omitempty"`
+	Seed                   *uint32        `json:"seed,omitempty"`
+	ApplyTextNormalization string         `json:"apply_text_normalization,omitempty"`
+	LanguageCode           string         `json:"language_code,omitempty"`
 }
 
 // VoiceSettings tunes synthesis parameters for a request.
 type VoiceSettings struct {
-	Stability       float64 `json:"stability,omitempty"`
-	SimilarityBoost float64 `json:"similarity_boost,omitempty"`
-	Style           float64 `json:"style,omitempty"`
-	SpeakerBoost    bool    `json:"speaker_boost,omitempty"`
-	Speed           float64 `json:"speed,omitempty"`
+	Stability       *float64 `json:"stability,omitempty"`
+	SimilarityBoost *float64 `json:"similarity_boost,omitempty"`
+	Style           *float64 `json:"style,omitempty"`
+	UseSpeakerBoost *bool    `json:"use_speaker_boost,omitempty"`
+	Speed           *float64 `json:"speed,omitempty"`
 }
 
 // StreamTTS requests streaming audio for text-to-speech.

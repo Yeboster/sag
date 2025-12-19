@@ -28,6 +28,16 @@ type speakOptions struct {
 	speed       float64
 	rateWPM     int
 	inputFile   string
+	stability   float64
+	similarity  float64
+	style       float64
+	seed        uint64
+	normalize   string
+	lang        string
+	metrics     bool
+
+	speakerBoost   bool
+	noSpeakerBoost bool
 }
 
 const defaultWPM = 175 // matches macOS `say` default rate
@@ -46,7 +56,7 @@ func init() {
 	cmd := &cobra.Command{
 		Use:   "speak [text]",
 		Short: "Speak the provided text using ElevenLabs TTS (default: stream to speakers)",
-		Long:  "If no text argument is provided, the command reads from stdin.",
+		Long:  "If no text argument is provided, the command reads from stdin.\n\nTip: run `sag prompting` for model-specific prompting tips and recommended flag combinations.",
 		Args:  cobra.ArbitraryArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return ensureAPIKey()
@@ -61,6 +71,9 @@ func init() {
 				if opts.speed <= 0.5 || opts.speed >= 2.0 {
 					return fmt.Errorf("rate %d wpm maps to speed %.2f, which is outside the allowed 0.5–2.0 range", opts.rateWPM, opts.speed)
 				}
+			}
+			if opts.speakerBoost && opts.noSpeakerBoost {
+				return errors.New("choose only one of --speaker-boost or --no-speaker-boost")
 			}
 
 			if opts.voiceID == "" {
@@ -96,19 +109,110 @@ func init() {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 90*time.Second)
 			defer cancel()
 
+			var stabilityPtr *float64
+			if cmd.Flags().Changed("stability") {
+				if opts.stability < 0 || opts.stability > 1 {
+					return errors.New("stability must be between 0 and 1")
+				}
+				stabilityPtr = &opts.stability
+			}
+
+			var similarityPtr *float64
+			if cmd.Flags().Changed("similarity") || cmd.Flags().Changed("similarity-boost") {
+				if opts.similarity < 0 || opts.similarity > 1 {
+					return errors.New("similarity must be between 0 and 1")
+				}
+				similarityPtr = &opts.similarity
+			}
+
+			var stylePtr *float64
+			if cmd.Flags().Changed("style") {
+				if opts.style < 0 || opts.style > 1 {
+					return errors.New("style must be between 0 and 1")
+				}
+				stylePtr = &opts.style
+			}
+
+			var speakerBoostPtr *bool
+			if opts.speakerBoost {
+				v := true
+				speakerBoostPtr = &v
+			} else if opts.noSpeakerBoost {
+				v := false
+				speakerBoostPtr = &v
+			}
+
+			var seedPtr *uint32
+			if cmd.Flags().Changed("seed") {
+				if opts.seed > 4294967295 {
+					return errors.New("seed must be between 0 and 4294967295")
+				}
+				v := uint32(opts.seed)
+				seedPtr = &v
+			}
+
+			normalize := strings.ToLower(strings.TrimSpace(opts.normalize))
+			if cmd.Flags().Changed("normalize") {
+				switch normalize {
+				case "auto", "on", "off":
+				default:
+					return errors.New("normalize must be one of: auto, on, off")
+				}
+			} else {
+				normalize = ""
+			}
+
+			lang := strings.ToLower(strings.TrimSpace(opts.lang))
+			if cmd.Flags().Changed("lang") {
+				if len(lang) != 2 {
+					return errors.New("lang must be a 2-letter ISO 639-1 code (e.g. en, de, fr)")
+				}
+				for _, r := range lang {
+					if r < 'a' || r > 'z' {
+						return errors.New("lang must be a 2-letter ISO 639-1 code (e.g. en, de, fr)")
+					}
+				}
+			} else {
+				lang = ""
+			}
+
+			speed := opts.speed
 			payload := elevenlabs.TTSRequest{
-				Text:         text,
-				ModelID:      opts.modelID,
-				OutputFormat: opts.outputFmt,
+				Text:                   text,
+				ModelID:                opts.modelID,
+				OutputFormat:           opts.outputFmt,
+				Seed:                   seedPtr,
+				ApplyTextNormalization: normalize,
+				LanguageCode:           lang,
 				VoiceSettings: &elevenlabs.VoiceSettings{
-					Speed: opts.speed,
+					Speed:           &speed,
+					Stability:       stabilityPtr,
+					SimilarityBoost: similarityPtr,
+					Style:           stylePtr,
+					UseSpeakerBoost: speakerBoostPtr,
 				},
 			}
 
+			start := time.Now()
+			var bytes int64
 			if opts.stream {
-				return streamAndPlay(ctx, client, opts, payload)
+				n, err := streamAndPlay(ctx, client, opts, payload)
+				bytes = n
+				if err != nil {
+					return err
+				}
+			} else {
+				n, err := convertAndPlay(ctx, client, opts, payload)
+				bytes = n
+				if err != nil {
+					return err
+				}
 			}
-			return convertAndPlay(ctx, client, opts, payload)
+			if opts.metrics {
+				fmt.Fprintf(os.Stderr, "metrics: chars=%d bytes=%d model=%s voice=%s stream=%t latencyTier=%d dur=%s\n",
+					len([]rune(text)), bytes, opts.modelID, opts.voiceID, opts.stream, opts.latencyTier, time.Since(start).Truncate(time.Millisecond))
+			}
+			return nil
 		},
 	}
 
@@ -121,17 +225,27 @@ func init() {
 	cmd.Flags().BoolVar(&opts.play, "play", opts.play, "Play audio through speakers")
 	cmd.Flags().IntVar(&opts.latencyTier, "latency-tier", 0, "Streaming latency tier (0=default,1-4 lower latency may cost more)")
 	cmd.Flags().Float64Var(&opts.speed, "speed", opts.speed, "Speech speed multiplier (e.g. 1.1 faster, 0.9 slower)")
-	cmd.Flags().IntVarP(&opts.rateWPM, "rate", "r", 0, "macOS `say`-style words-per-minute; overrides --speed when set (default 175 wpm)")
-	cmd.Flags().StringVarP(&opts.inputFile, "input-file", "f", "", "Read text from file (use '-' for stdin), matching macOS `say -f`")
-	cmd.Flags().Bool("progress", false, "Accepted for macOS `say` compatibility (no-op)")
-	cmd.Flags().String("network-send", "", "Accepted for macOS `say` compatibility (not implemented)")
-	cmd.Flags().String("audio-device", "", "Accepted for macOS `say` compatibility (not implemented)")
-	cmd.Flags().String("interactive", "", "Accepted for macOS `say` compatibility (not implemented)")
-	cmd.Flags().String("file-format", "", "Accepted for macOS `say` compatibility (not implemented)")
-	cmd.Flags().String("data-format", "", "Accepted for macOS `say` compatibility (not implemented)")
-	cmd.Flags().Int("channels", 0, "Accepted for macOS `say` compatibility (not implemented)")
-	cmd.Flags().Int("bit-rate", 0, "Accepted for macOS `say` compatibility (not implemented)")
-	cmd.Flags().Int("quality", 0, "Accepted for macOS `say` compatibility (not implemented)")
+	cmd.Flags().IntVarP(&opts.rateWPM, "rate", "r", 0, "macOS say-style words-per-minute; overrides --speed when set (default 175 wpm)")
+	cmd.Flags().Float64Var(&opts.stability, "stability", 0, "Voice stability (0..1; higher = more consistent, less expressive)")
+	cmd.Flags().Float64Var(&opts.similarity, "similarity", 0, "Voice similarity boost (0..1; higher = closer to reference voice)")
+	cmd.Flags().Float64Var(&opts.similarity, "similarity-boost", 0, "Alias for --similarity")
+	cmd.Flags().Float64Var(&opts.style, "style", 0, "Voice style exaggeration (0..1; higher = more stylized delivery)")
+	cmd.Flags().BoolVar(&opts.speakerBoost, "speaker-boost", false, "Enable speaker boost (can improve clarity; model dependent)")
+	cmd.Flags().BoolVar(&opts.noSpeakerBoost, "no-speaker-boost", false, "Disable speaker boost")
+	cmd.Flags().Uint64Var(&opts.seed, "seed", 0, "Best-effort deterministic seed (0..4294967295; helps repeatability across runs)")
+	cmd.Flags().StringVar(&opts.normalize, "normalize", "", "Text normalization: auto|on|off (numbers/units/URLs; when set)")
+	cmd.Flags().StringVar(&opts.lang, "lang", "", "Language code (2-letter ISO 639-1; influences normalization; when set)")
+	cmd.Flags().BoolVar(&opts.metrics, "metrics", false, "Print request metrics to stderr (chars, bytes, duration, etc.)")
+	cmd.Flags().StringVarP(&opts.inputFile, "input-file", "f", "", "Read text from file (use '-' for stdin), matching macOS say -f")
+	cmd.Flags().Bool("progress", false, "Accepted for macOS say compatibility (no-op)")
+	cmd.Flags().String("network-send", "", "Accepted for macOS say compatibility (not implemented)")
+	cmd.Flags().String("audio-device", "", "Accepted for macOS say compatibility (not implemented)")
+	cmd.Flags().String("interactive", "", "Accepted for macOS say compatibility (not implemented)")
+	cmd.Flags().String("file-format", "", "Accepted for macOS say compatibility (not implemented)")
+	cmd.Flags().String("data-format", "", "Accepted for macOS say compatibility (not implemented)")
+	cmd.Flags().Int("channels", 0, "Accepted for macOS say compatibility (not implemented)")
+	cmd.Flags().Int("bit-rate", 0, "Accepted for macOS say compatibility (not implemented)")
+	cmd.Flags().Int("quality", 0, "Accepted for macOS say compatibility (not implemented)")
 
 	rootCmd.AddCommand(cmd)
 }
@@ -181,10 +295,10 @@ func isStdinTTY() bool {
 	return (stat.Mode() & os.ModeCharDevice) != 0
 }
 
-func streamAndPlay(ctx context.Context, client *elevenlabs.Client, opts speakOptions, payload elevenlabs.TTSRequest) error {
+func streamAndPlay(ctx context.Context, client *elevenlabs.Client, opts speakOptions, payload elevenlabs.TTSRequest) (int64, error) {
 	resp, err := client.StreamTTS(ctx, opts.voiceID, payload, opts.latencyTier)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer func() {
 		_ = resp.Close()
@@ -194,11 +308,11 @@ func streamAndPlay(ctx context.Context, client *elevenlabs.Client, opts speakOpt
 	var file io.WriteCloser
 	if opts.outputPath != "" {
 		if err := os.MkdirAll(filepath.Dir(opts.outputPath), 0o755); err != nil {
-			return err
+			return 0, err
 		}
 		file, err = os.Create(opts.outputPath)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		defer func() {
 			_ = file.Close()
@@ -212,41 +326,45 @@ func streamAndPlay(ctx context.Context, client *elevenlabs.Client, opts speakOpt
 		mw := io.MultiWriter(writers...)
 
 		copyErr := make(chan error, 1)
+		copyN := make(chan int64, 1)
 		go func() {
-			_, err := io.Copy(mw, resp)
+			n, err := io.Copy(mw, resp)
+			copyN <- n
 			copyErr <- err
 			_ = pw.Close()
 		}()
 
 		playErr := playToSpeakers(ctx, pr)
+		copyNVal := <-copyN
 		copyErrVal := <-copyErr
 		if copyErrVal != nil {
-			return copyErrVal
+			return copyNVal, copyErrVal
 		}
-		return playErr
+		return copyNVal, playErr
 	}
 
 	if len(writers) == 0 {
-		return errors.New("nothing to do: enable --play or provide --output")
+		return 0, errors.New("nothing to do: enable --play or provide --output")
 	}
 
 	mw := io.MultiWriter(writers...)
-	_, err = io.Copy(mw, resp)
-	return err
+	n, err := io.Copy(mw, resp)
+	return n, err
 }
 
-func convertAndPlay(ctx context.Context, client *elevenlabs.Client, opts speakOptions, payload elevenlabs.TTSRequest) error {
+func convertAndPlay(ctx context.Context, client *elevenlabs.Client, opts speakOptions, payload elevenlabs.TTSRequest) (int64, error) {
 	data, err := client.ConvertTTS(ctx, opts.voiceID, payload)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	n := int64(len(data))
 
 	if opts.outputPath != "" {
 		if err := os.MkdirAll(filepath.Dir(opts.outputPath), 0o755); err != nil {
-			return err
+			return n, err
 		}
 		if err := os.WriteFile(opts.outputPath, data, 0o644); err != nil {
-			return err
+			return n, err
 		}
 	}
 
@@ -256,12 +374,12 @@ func convertAndPlay(ctx context.Context, client *elevenlabs.Client, opts speakOp
 			_, _ = pw.Write(data)
 			_ = pw.Close()
 		}()
-		return playToSpeakers(ctx, pr)
+		return n, playToSpeakers(ctx, pr)
 	}
 	if opts.outputPath == "" {
-		return errors.New("nothing to do: enable --play or provide --output")
+		return n, errors.New("nothing to do: enable --play or provide --output")
 	}
-	return nil
+	return n, nil
 }
 
 func resolveVoice(ctx context.Context, client *elevenlabs.Client, voiceInput string) (string, error) {

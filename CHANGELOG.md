@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 - 2025-12-19
+### Added
+- Voice control flags: `--stability`, `--similarity`/`--similarity-boost`, `--style`, `--speaker-boost`/`--no-speaker-boost`.
+- Request controls: `--seed`, `--normalize (auto|on|off)`, `--lang` (ISO 639-1).
+- `--metrics` to print basic request stats (chars/bytes/duration) to stderr.
+
+## 0.1.1 - 2025-12-19
+### Changed
+- Release metadata only (patch bump).
+
 ## 0.1.0 - 2025-12-08
 ### Added
 - Initial release of `sag` ElevenLabs TTS CLI with macOS `say`-style flags.
