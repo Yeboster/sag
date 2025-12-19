@@ -72,9 +72,6 @@ func init() {
 					return fmt.Errorf("rate %d wpm maps to speed %.2f, which is outside the allowed 0.5–2.0 range", opts.rateWPM, opts.speed)
 				}
 			}
-			if opts.speakerBoost && opts.noSpeakerBoost {
-				return errors.New("choose only one of --speaker-boost or --no-speaker-boost")
-			}
 
 			if opts.voiceID == "" {
 				opts.voiceID = os.Getenv("ELEVENLABS_VOICE_ID")
@@ -109,88 +106,9 @@ func init() {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 90*time.Second)
 			defer cancel()
 
-			var stabilityPtr *float64
-			if cmd.Flags().Changed("stability") {
-				if opts.stability < 0 || opts.stability > 1 {
-					return errors.New("stability must be between 0 and 1")
-				}
-				stabilityPtr = &opts.stability
-			}
-
-			var similarityPtr *float64
-			if cmd.Flags().Changed("similarity") || cmd.Flags().Changed("similarity-boost") {
-				if opts.similarity < 0 || opts.similarity > 1 {
-					return errors.New("similarity must be between 0 and 1")
-				}
-				similarityPtr = &opts.similarity
-			}
-
-			var stylePtr *float64
-			if cmd.Flags().Changed("style") {
-				if opts.style < 0 || opts.style > 1 {
-					return errors.New("style must be between 0 and 1")
-				}
-				stylePtr = &opts.style
-			}
-
-			var speakerBoostPtr *bool
-			if opts.speakerBoost {
-				v := true
-				speakerBoostPtr = &v
-			} else if opts.noSpeakerBoost {
-				v := false
-				speakerBoostPtr = &v
-			}
-
-			var seedPtr *uint32
-			if cmd.Flags().Changed("seed") {
-				if opts.seed > 4294967295 {
-					return errors.New("seed must be between 0 and 4294967295")
-				}
-				v := uint32(opts.seed)
-				seedPtr = &v
-			}
-
-			normalize := strings.ToLower(strings.TrimSpace(opts.normalize))
-			if cmd.Flags().Changed("normalize") {
-				switch normalize {
-				case "auto", "on", "off":
-				default:
-					return errors.New("normalize must be one of: auto, on, off")
-				}
-			} else {
-				normalize = ""
-			}
-
-			lang := strings.ToLower(strings.TrimSpace(opts.lang))
-			if cmd.Flags().Changed("lang") {
-				if len(lang) != 2 {
-					return errors.New("lang must be a 2-letter ISO 639-1 code (e.g. en, de, fr)")
-				}
-				for _, r := range lang {
-					if r < 'a' || r > 'z' {
-						return errors.New("lang must be a 2-letter ISO 639-1 code (e.g. en, de, fr)")
-					}
-				}
-			} else {
-				lang = ""
-			}
-
-			speed := opts.speed
-			payload := elevenlabs.TTSRequest{
-				Text:                   text,
-				ModelID:                opts.modelID,
-				OutputFormat:           opts.outputFmt,
-				Seed:                   seedPtr,
-				ApplyTextNormalization: normalize,
-				LanguageCode:           lang,
-				VoiceSettings: &elevenlabs.VoiceSettings{
-					Speed:           &speed,
-					Stability:       stabilityPtr,
-					SimilarityBoost: similarityPtr,
-					Style:           stylePtr,
-					UseSpeakerBoost: speakerBoostPtr,
-				},
+			payload, err := buildTTSRequest(cmd, opts, text)
+			if err != nil {
+				return err
 			}
 
 			start := time.Now()
@@ -248,6 +166,97 @@ func init() {
 	cmd.Flags().Int("quality", 0, "Accepted for macOS say compatibility (not implemented)")
 
 	rootCmd.AddCommand(cmd)
+}
+
+func buildTTSRequest(cmd *cobra.Command, opts speakOptions, text string) (elevenlabs.TTSRequest, error) {
+	flags := cmd.Flags()
+
+	var stabilityPtr *float64
+	if flags.Changed("stability") {
+		if opts.stability < 0 || opts.stability > 1 {
+			return elevenlabs.TTSRequest{}, errors.New("stability must be between 0 and 1")
+		}
+		stabilityPtr = &opts.stability
+	}
+
+	var similarityPtr *float64
+	if flags.Changed("similarity") || flags.Changed("similarity-boost") {
+		if opts.similarity < 0 || opts.similarity > 1 {
+			return elevenlabs.TTSRequest{}, errors.New("similarity must be between 0 and 1")
+		}
+		similarityPtr = &opts.similarity
+	}
+
+	var stylePtr *float64
+	if flags.Changed("style") {
+		if opts.style < 0 || opts.style > 1 {
+			return elevenlabs.TTSRequest{}, errors.New("style must be between 0 and 1")
+		}
+		stylePtr = &opts.style
+	}
+
+	if flags.Changed("speaker-boost") && flags.Changed("no-speaker-boost") {
+		return elevenlabs.TTSRequest{}, errors.New("choose only one of --speaker-boost or --no-speaker-boost")
+	}
+	var speakerBoostPtr *bool
+	if flags.Changed("speaker-boost") {
+		v := true
+		speakerBoostPtr = &v
+	} else if flags.Changed("no-speaker-boost") {
+		v := false
+		speakerBoostPtr = &v
+	}
+
+	var seedPtr *uint32
+	if flags.Changed("seed") {
+		if opts.seed > 4294967295 {
+			return elevenlabs.TTSRequest{}, errors.New("seed must be between 0 and 4294967295")
+		}
+		v := uint32(opts.seed)
+		seedPtr = &v
+	}
+
+	normalize := strings.ToLower(strings.TrimSpace(opts.normalize))
+	if flags.Changed("normalize") {
+		switch normalize {
+		case "auto", "on", "off":
+		default:
+			return elevenlabs.TTSRequest{}, errors.New("normalize must be one of: auto, on, off")
+		}
+	} else {
+		normalize = ""
+	}
+
+	lang := strings.ToLower(strings.TrimSpace(opts.lang))
+	if flags.Changed("lang") {
+		if len(lang) != 2 {
+			return elevenlabs.TTSRequest{}, errors.New("lang must be a 2-letter ISO 639-1 code (e.g. en, de, fr)")
+		}
+		for _, r := range lang {
+			if r < 'a' || r > 'z' {
+				return elevenlabs.TTSRequest{}, errors.New("lang must be a 2-letter ISO 639-1 code (e.g. en, de, fr)")
+			}
+		}
+	} else {
+		lang = ""
+	}
+
+	speed := opts.speed
+	return elevenlabs.TTSRequest{
+		Text:                   text,
+		ModelID:                opts.modelID,
+		OutputFormat:           opts.outputFmt,
+		Seed:                   seedPtr,
+		ApplyTextNormalization: normalize,
+		LanguageCode:           lang,
+		VoiceSettings: &elevenlabs.VoiceSettings{
+			Speed:           &speed,
+			Stability:       stabilityPtr,
+			SimilarityBoost: similarityPtr,
+			Style:           stylePtr,
+			UseSpeakerBoost: speakerBoostPtr,
+		},
+	}, nil
 }
 
 func resolveText(args []string, inputFile string) (string, error) {
