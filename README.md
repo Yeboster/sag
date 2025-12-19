@@ -74,6 +74,17 @@ Voices:
 sag voices --search english --limit 20
 ```
 
+## Prompting (make it sound better)
+Run:
+```bash
+sag prompting
+```
+
+Highlights:
+- v2/v2.5: SSML pauses via `<break time="1.5s" />` (v3 does not support SSML breaks).
+- v3: use audio tags like `[whispers]` and pause tags like `[short pause]`.
+- Use the voice knobs: `--stability`, `--similarity`, `--style`, `--speaker-boost`, plus request controls `--seed`, `--normalize`, `--lang`.
+
 ## Development
 - With pnpm:
   - `pnpm format`

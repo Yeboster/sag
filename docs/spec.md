@@ -59,6 +59,10 @@ Sample:
 sag voices --search "english"
 ```
 
+### `sag prompting`
+- Prints a practical prompting guide (model-specific tips, tags, and suggested flags).
+- Does not require an API key.
+
 ## Config sources
 - `ELEVENLABS_API_KEY` for auth (required).
 - Default voice env: `ELEVENLABS_VOICE_ID` or `SAG_VOICE_ID`.

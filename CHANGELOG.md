@@ -5,6 +5,7 @@
 - Voice control flags: `--stability`, `--similarity`/`--similarity-boost`, `--style`, `--speaker-boost`/`--no-speaker-boost`.
 - Request controls: `--seed`, `--normalize (auto|on|off)`, `--lang` (ISO 639-1).
 - `--metrics` to print basic request stats (chars/bytes/duration) to stderr.
+- `sag prompting` command and README section with prompting tips.
 
 ## 0.1.1 - 2025-12-19
 ### Changed
