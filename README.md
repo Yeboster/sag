@@ -95,13 +95,14 @@ Highlights:
 |---|---|---|---|
 | v3 (alpha) | `eleven_v3` (default) | Audio tags like `[whispers]`, `[short pause]` (no SSML `<break>`) | Most expressive / “acting” |
 | v2 (stable) | `eleven_multilingual_v2` | SSML `<break>` supported | Reliable baseline, simple prompts |
-| v2.5 Flash | `eleven_flash_v2_5` | SSML `<break>` supported | Lowest latency + cheaper self-serve |
-| v2.5 Turbo | `eleven_turbo_v2_5` | SSML `<break>` supported | Balanced speed/quality + cheaper self-serve |
+| v2.5 Flash | `eleven_flash_v2_5` | SSML `<break>` supported | Ultra-low latency (~75ms) + 50% lower price per character |
+| v2.5 Turbo | `eleven_turbo_v2_5` | SSML `<break>` supported | Low latency (~250–300ms) + 50% lower price per character |
 
 Notes:
 - SSML `<break>` works on v2/v2.5, not v3. Use pause tags on v3 instead.
-- Input limits differ by engine (v3 ~5k chars; v2 ~10k; v2.5 Turbo/Flash ~40k). If you hit limits, chunk text and stitch audio.
-- Cost is per character and plan/voice dependent. Common rule of thumb: v3/v2 are 1 credit/char; v2.5 Turbo/Flash are ~0.5 credits/char (plus possible voice multipliers).
+- Input limits differ by engine (v3: 5,000 chars; v2: 10,000 chars; v2.5 Turbo/Flash: 40,000 chars). If you hit limits, chunk text and stitch audio.
+- `--normalize on` may not be available for v2.5 Turbo/Flash (higher latency); prefer `auto`/`off` if it errors.
+- Source of truth: ElevenLabs “Models” docs.
 
 ## Development
 - With pnpm:

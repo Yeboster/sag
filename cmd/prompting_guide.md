@@ -17,9 +17,10 @@ Goal: “more natural” output + controllable delivery.
 - Some English-only models support SSML `<phoneme>` for pronunciation (not yet exposed in `sag`).
 
 ### v2.5 speed/cost options
-- Flash: `eleven_flash_v2_5` (lowest latency; common “cheap + fast” choice)
-- Turbo: `eleven_turbo_v2_5` (balanced speed/quality; also cheaper on self-serve)
+- Flash: `eleven_flash_v2_5` (ultra-low latency; up to 40,000 chars per request; 50% lower price per character)
+- Turbo: `eleven_turbo_v2_5` (low latency; up to 40,000 chars per request; 50% lower price per character)
 - Prompting looks like v2 (plain text + SSML `<break>`). If numbers/units sound off, try `--normalize auto` and/or respell.
+- If `--normalize on` errors on v2.5, use `auto` or `off`.
 
 ## Universal “make it sound good” rules
 - Write like a script: short sentences; newlines for beats.
