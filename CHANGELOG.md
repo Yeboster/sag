@@ -2,7 +2,7 @@
 
 ## 0.3.0 - Unreleased
 ### Added
-- Voice discovery upgrades: semantic `--query` over name/description/labels, repeatable `--label` filters, preview playback via `--try`, and metadata caching for faster repeats.
+- Voice discovery: semantic `--query` over name/description/labels, repeatable `--label` filters, preview playback via `--try`, metadata caching, and server-side name search when supported.
 
 ## 0.2.2 - 2026-01-24
 ### Fixed
