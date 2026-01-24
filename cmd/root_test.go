@@ -39,6 +39,23 @@ func TestMaybeDefaultToSpeak_HelpFlags(t *testing.T) {
 	}
 }
 
+func TestMaybeDefaultToSpeak_Builtins(t *testing.T) {
+	cases := [][]string{
+		{"sag", "help"},
+		{"sag", "completion"},
+	}
+	for _, args := range cases {
+		t.Run(args[1], func(t *testing.T) {
+			defer keepArgs(t)()
+			os.Args = append([]string(nil), args...)
+			maybeDefaultToSpeak()
+			if got := os.Args[1]; got != args[1] {
+				t.Fatalf("builtin should remain first arg, got %q", got)
+			}
+		})
+	}
+}
+
 func TestMaybeDefaultToSpeak_KnownSubcommand(t *testing.T) {
 	defer keepArgs(t)()
 	os.Args = []string{"sag", "voices"}

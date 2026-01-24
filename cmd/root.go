@@ -62,10 +62,15 @@ func maybeDefaultToSpeak() {
 	}
 
 	first := os.Args[1]
-	if isKnownSubcommand(first) || first == "-h" || first == "--help" {
+	if isKnownSubcommand(first) || isCobraBuiltin(first) || first == "-h" || first == "--help" {
 		return
 	}
 	os.Args = append([]string{os.Args[0], "speak"}, os.Args[1:]...)
+}
+
+func isCobraBuiltin(name string) bool {
+	name = strings.ToLower(name)
+	return name == "help" || name == "completion"
 }
 
 func isKnownSubcommand(name string) bool {
