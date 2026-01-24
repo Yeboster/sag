@@ -16,6 +16,7 @@ Requires Go 1.24+.
 
 ## Configuration
 - `ELEVENLABS_API_KEY` (required)
+- `--api-key-file` or `ELEVENLABS_API_KEY_FILE`/`SAG_API_KEY_FILE` to load the key from a file
 - Optional defaults: `ELEVENLABS_VOICE_ID` or `SAG_VOICE_ID`
 
 ## Usage
@@ -55,6 +56,7 @@ sag speak -v Roger --output out.wav --format pcm_44100 "Wave output"
 
 Key flags (subset):
 - `-v, --voice` voice name or ID (`?` to list)
+- `--api-key-file` read API key from a file
 - `-r, --rate` words per minute (maps to ElevenLabs speed; default 175)
 - `-f, --input-file` read text from file (`-` for stdin)
 - `-o, --output` write audio file; format inferred by extension (`.wav` -> PCM, `.mp3` -> MP3)
