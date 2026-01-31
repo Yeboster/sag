@@ -11,7 +11,7 @@ Follow these steps for each release. Title GitHub releases as `sag <version>`.
 - Update `CHANGELOG.md` with a section for the new version.
 - Run the gates: `pnpm format && pnpm lint && pnpm test && pnpm build`.
 - Tag the release: `git tag -a v<version> -m "Release <version>"` after commits; push tags with `git push origin main --tags`.
-- GitHub Actions attaches binaries (macOS universal, Linux amd64, Windows amd64) to the GitHub release automatically (workflow: `Release Binaries`).
+- GitHub Actions attaches binaries (macOS universal, Linux amd64, Linux arm64, Windows amd64) to the GitHub release automatically (workflow: `Release Binaries`).
 - Update Homebrew tap formula (`../homebrew-tap/Formula/sag.rb`):
   1. Set `version "<version>"`.
   2. Set `url "https://github.com/steipete/sag/archive/refs/tags/v<version>.tar.gz"`.

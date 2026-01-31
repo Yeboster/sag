@@ -14,48 +14,6 @@ permissions:
   contents: write
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24.x"
-          check-latest: true
-
-      - name: Build universal macOS binary
-        shell: bash
-        run: |
-          set -euo pipefail
-          ref="${{ inputs.tag }}"
-          if [ -z "$ref" ]; then ref="${GITHUB_REF_NAME}"; fi
-          version="${ref#v}"
-          mkdir -p dist/build dist/out/pkg
-
-          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -o dist/build/sag-darwin-arm64 ./cmd/sag
-          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o dist/build/sag-darwin-amd64 ./cmd/sag
-
-          lipo -create -output dist/build/sag dist/build/sag-darwin-arm64 dist/build/sag-darwin-amd64
-
-          cp README.md LICENSE dist/out/pkg/
-          cp dist/build/sag dist/out/pkg/
-          tar -C dist/out/pkg -czf "dist/out/sag_${version}_darwin_universal.tar.gz" sag README.md LICENSE
-
-          shasum -a 256 "dist/out/sag_${version}_darwin_universal.tar.gz" > "dist/out/sag_${version}_darwin_universal.tar.gz.sha256"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-macos
-          path: |
-            dist/out/*.tar.gz
-            dist/out/*.sha256
-
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -73,7 +31,7 @@ jobs:
       - name: Install system dependencies (audio)
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev
 
-      - name: Build linux amd64 binary
+      - name: Build linux binaries (amd64 + arm64)
         shell: bash
         run: |
           set -euo pipefail
@@ -82,13 +40,23 @@ jobs:
           version="${ref#v}"
           mkdir -p dist/build dist/out/pkg
 
-          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o dist/build/sag ./cmd/sag
+          # Build linux amd64 with CGO enabled (links to system audio libs)
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o dist/build/sag-linux-amd64 ./cmd/sag
+
+          # Build linux arm64 without CGO (avoids cross-compile CGO toolchain requirements)
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o dist/build/sag-linux-arm64 ./cmd/sag
 
           cp README.md LICENSE dist/out/pkg/
-          cp dist/build/sag dist/out/pkg/
-          tar -C dist/out/pkg -czf "dist/out/sag_${version}_linux_amd64.tar.gz" sag README.md LICENSE
 
+          # Package amd64
+          cp dist/build/sag-linux-amd64 dist/out/pkg/sag
+          tar -C dist/out/pkg -czf "dist/out/sag_${version}_linux_amd64.tar.gz" sag README.md LICENSE
           sha256sum "dist/out/sag_${version}_linux_amd64.tar.gz" > "dist/out/sag_${version}_linux_amd64.tar.gz.sha256"
+
+          # Package arm64
+          cp dist/build/sag-linux-arm64 dist/out/pkg/sag
+          tar -C dist/out/pkg -czf "dist/out/sag_${version}_linux_arm64.tar.gz" sag README.md LICENSE
+          sha256sum "dist/out/sag_${version}_linux_arm64.tar.gz" > "dist/out/sag_${version}_linux_arm64.tar.gz.sha256"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -98,53 +66,10 @@ jobs:
             dist/out/*.tar.gz
             dist/out/*.sha256
 
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24.x"
-          check-latest: true
-
-      - name: Build windows amd64 binary
-        shell: pwsh
-        run: |
-          $ref = "${{ inputs.tag }}"
-          if ([string]::IsNullOrWhiteSpace($ref)) { $ref = "${env:GITHUB_REF_NAME}" }
-          $version = $ref.TrimStart("v")
-          New-Item -ItemType Directory -Force -Path dist\out\pkg | Out-Null
-
-          $env:CGO_ENABLED = "0"
-          $env:GOOS = "windows"
-          $env:GOARCH = "amd64"
-          go build -o dist\out\pkg\sag.exe .\cmd\sag
-
-          Copy-Item README.md dist\out\pkg\
-          Copy-Item LICENSE dist\out\pkg\
-
-          $zip = "dist\out\sag_${version}_windows_amd64.zip"
-          if (Test-Path $zip) { Remove-Item $zip -Force }
-          Compress-Archive -Path dist\out\pkg\sag.exe,dist\out\pkg\README.md,dist\out\pkg\LICENSE -DestinationPath $zip
-
-          (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower() + "  " + (Split-Path $zip -Leaf) | Out-File -Encoding ascii "$zip.sha256"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-windows
-          path: |
-            dist/out/*.zip
-            dist/out/*.sha256
-
+  
   upload:
     runs-on: ubuntu-latest
-    needs: [build-macos, build-linux, build-windows]
+    needs: [build-linux]
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
