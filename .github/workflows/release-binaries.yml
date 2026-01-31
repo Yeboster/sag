@@ -31,9 +31,13 @@ jobs:
       - name: Install system dependencies (audio + cross-compile)
         run: |
           sudo apt-get update
+          # Native amd64: audio libs for linux/amd64 build
           sudo apt-get install -y libasound2-dev
-          # ARM64 cross-compiler for CGO cross-build (avoids gcc_arm64.S assembler errors)
+          # ARM64 cross-compiler and ARM64 ALSA libs for linux/arm64 build
           sudo apt-get install -y gcc-aarch64-linux-gnu
+          sudo dpkg --add-architecture arm64
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev:arm64
 
       - name: Build linux binaries (amd64 + arm64)
         shell: bash
